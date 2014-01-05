@@ -168,7 +168,7 @@ install unicomm_prefix_lib_install
 
 install unicomm_prefix_headers_install
   : ### sources
-    [ path.glob-tree $(UNICOMM_ROOT)/include : *.hpp : .svn ]
+    [ path.glob-tree $(UNICOMM_ROOT)/include : *.hpp *.ipp : .svn ]
   : ### requirements
     <location>$(PREFIX_DIR)/include
     <install-source-root>$(UNICOMM_ROOT)/include
