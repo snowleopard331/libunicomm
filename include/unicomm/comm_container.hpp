@@ -91,7 +91,7 @@ public:
    *
    *  @param message Message to send.
    *  @return Map of the sent message identifiers. The map contains 
-   *    <commid, messagid> pairs. 
+   *    <commid, messageid> pairs. 
    *
    *  @throw The same as unicomm::communicator::send().
    */
@@ -105,7 +105,7 @@ public:
    *  @param message Message to send.
    *  @param handler Handler to be called when the message is actually sent.
    *  @return Map of the sent message identifiers. The map contains 
-   *    <commid, messagid> pairs. 
+   *    <commid, messageid> pairs. 
    *
    *  @throw The same as unicomm::communicator::send().
    */
@@ -158,6 +158,12 @@ public:
    *  @return Communicator objects collection.
    */
   comm_collection_type communicators(void) const;
+
+  /** Retrieves a communicator identifiers collection. 
+   *
+   *  @return Communicator identifiers collection.
+   */
+  commid_collection_type connections(void) const;
 
 //////////////////////////////////////////////////////////////////////////
 // private stuff

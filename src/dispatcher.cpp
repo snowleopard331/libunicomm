@@ -224,8 +224,7 @@ unicomm::commid_type unicomm::dispatcher::new_commid(void)
 //-----------------------------------------------------------------------------
 unicomm::dispatcher::commid_collection_type unicomm::dispatcher::connections(void) const
 {
-  // fixme: line below is not correct, implementation is necessary
-  return commid_collection_type();
+  return clients().connections();
 }
 
 //-----------------------------------------------------------------------------
@@ -466,9 +465,6 @@ void unicomm::dispatcher::process_clients(void)
   // move clients back
   for_each(comms.begin(), comms.end(), 
     boost::bind(&comm_container_type::get_back, &clients(), _1));
-
-  // move all clients back
-  //clients().put_in_all();
 }
 
 //-----------------------------------------------------------------------------
@@ -507,7 +503,9 @@ void unicomm::dispatcher::process_client(communicator& comm)
 
   catch (const handshake_error& e)
   {
-    UNICOMM_DEBUG_OUT("[unicomm::dispatcher]: Handshake error exception; comm ID = " << comm.id() << " [what: " << e.what() << ", reason: " << e.code() << "; " << e.code().message() << "]")
+    UNICOMM_DEBUG_OUT("[unicomm::dispatcher]: Handshake error exception; comm ID = " 
+      << comm.id() << " [what: " << e.what() << ", reason: " 
+      << e.code() << "; " << e.code().message() << "]")
     
     handle_disconnected(comm, e);
   }
@@ -516,19 +514,22 @@ void unicomm::dispatcher::process_client(communicator& comm)
 
   catch (const communication_error& e)
   {
-    UNICOMM_DEBUG_OUT("[unicomm::dispatcher]: Communication error exception [what: " << e.what() << ", reason: " << e.code() << "; " << e.code().message() << "]")
+    UNICOMM_DEBUG_OUT("[unicomm::dispatcher]: Communication error exception [what: " 
+      << e.what() << ", reason: " << e.code() << "; " << e.code().message() << "]")
 
     handle_error(comm, e.what());
   }
   catch (const std::exception& e)
   {
-    UNICOMM_DEBUG_OUT("[unicomm::dispatcher]: Process client has risen an std::exception [" << e.what() << "]")
+    UNICOMM_DEBUG_OUT("[unicomm::dispatcher]: Process client has risen " 
+      << "an std::exception [" << e.what() << "]")
 
     handle_error(comm, e.what()); 
   }
   catch (...)
   {
-    UNICOMM_DEBUG_OUT("[unicomm::dispatcher]: Process client has risen an UNKNOWN exception!")
+    UNICOMM_DEBUG_OUT("[unicomm::dispatcher]: Process client has risen " 
+      << "an UNKNOWN exception!")
 
     BOOST_ASSERT(!"Process client has risen an UNKNOWN exception!");
 

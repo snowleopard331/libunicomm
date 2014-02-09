@@ -25,6 +25,7 @@
 #include <algorithm>
 
 using std::make_pair;
+using std::for_each;
 
 using boost::recursive_mutex;
 
@@ -62,8 +63,8 @@ public:
     _sended.insert(make_pair(commpair.first, send(commpair, message, handler)));
   }
 
-  //////////////////////////////////////////////////////////////////////////
-  // private stuff
+//////////////////////////////////////////////////////////////////////////
+// private stuff
 private:
   unicomm::messageid_type send(
     const unicomm::comm_container::comm_collection_type::value_type &commpair, 
@@ -85,6 +86,20 @@ private:
   //////////////////////////////////////////////////////////////////////////
   // data
   unicomm::full_messageid_map_type _sended;
+};
+
+struct id_collector
+{
+  explicit id_collector(unicomm::comm_container::commid_collection_type& commids): 
+  _commids(&commids) { /* empty */ }
+
+  void operator()(const unicomm::comm_container::comm_collection_type::value_type& comm_pair) const
+  {
+    _commids->push_back(comm_pair.first);
+  }
+
+private:
+  unicomm::comm_container::commid_collection_type *_commids;
 };
 
 } // unnamed namespace
@@ -109,25 +124,6 @@ unicomm::comm_container::comm_ptr unicomm::comm_container::take_out(void)
 
   return comm;
 }
-
-////------------------------------------------------------------------------
-//void unicomm::comm_container::get_back(commid_type id)
-//{
-//  boost::recursive_mutex::scoped_lock lock(_clients_mutex);
-//
-//  BOOST_ASSERT(mt_excluded_client_exists(id) && 
-//    " - Requested communicator id is not found in excluded collection");
-//
-//  if (mt_excluded_client_exists(id))
-//  {
-//    // erase original primary collection
-//    const comm_ptr comm = excluded_clients().find(id)->second;
-//    excluded_clients().erase(id);
-//
-//    // insert into primary collection
-//    insert_client(comm, clients());
-//  }
-//}
 
 //------------------------------------------------------------------------
 void unicomm::comm_container::get_back(commid_type id)
@@ -282,7 +278,7 @@ bool unicomm::comm_container::erase(commid_type id)
   return erased != 0;
 }
 
-//-----------------------------------------------------------------------------
+//------------------------------------------------------------------------
 unicomm::comm_container::comm_collection_type 
 unicomm::comm_container::communicators(void) const 
 { 
@@ -293,6 +289,24 @@ unicomm::comm_container::communicators(void) const
 
   return comms;
   //std::copy(clients.begin(), clients().end(), std::inserter(comms));
+}
+
+//------------------------------------------------------------------------
+unicomm::comm_container::commid_collection_type 
+unicomm::comm_container::connections(void) const 
+{ 
+  boost::recursive_mutex::scoped_lock lock(_clients_mutex);
+
+  commid_collection_type commids;
+  commids.reserve(0x80);
+
+  //struct id_collector {}; // gcc doesn't eat
+
+  std::for_each(clients().begin(), clients().end(), id_collector(commids));
+  std::for_each(excluded_clients().begin(), excluded_clients().end(), 
+    id_collector(commids));
+
+  return commids;
 }
 
 //------------------------------------------------------------------------

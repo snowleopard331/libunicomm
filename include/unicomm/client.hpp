@@ -35,6 +35,8 @@
 # pragma warning (pop)
 #endif // UNI_VISUAL_CPP
 
+#include <boost/thread/mutex.hpp>
+
 #include <vector>
 
 /** @namespace unicomm Unicomm library root namespace. */
@@ -191,6 +193,7 @@ private:
   };
 
   typedef std::vector<connect_error_info> connect_error_collection_type;
+  typedef boost::mutex mutex_type;
 
 private:
   //////////////////////////////////////////////////////////////////////////
@@ -211,7 +214,7 @@ private:
   void constructor(const connect_error_signal_type::slot_function_type& error_handler);
   void initialize(void);
   void start_connect(const connect_error_signal_type::slot_function_type& error_handler);
-  bool is_connect_error(void) const;
+  bool is_connect_error(void) { return !_conn_errors.empty(); }
 
   //////////////////////////////////////////////////////////////////////////
   // core - processors
@@ -220,7 +223,6 @@ private:
 
   //////////////////////////////////////////////////////////////////////////
   // virtual stuff
-  //void before_start(void);
   void on_reset(void);
 
   //////////////////////////////////////////////////////////////////////////
@@ -232,8 +234,10 @@ private:
   //////////////////////////////////////////////////////////////////////////
   // connection error handling: routines
   void reg_conn_error(const connect_error_info& err_info);
+  void clear_conn_errors(void);
 
 private:
+  mutex_type _conn_errors_mutex;
   connect_error_collection_type _conn_errors;
   connect_error_signal_type _conn_error_signal;
 };

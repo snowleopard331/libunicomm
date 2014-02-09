@@ -121,12 +121,6 @@ void unicomm::client::start_connect(
     boost::asio::placeholders::error));
 }
 
-//-----------------------------------------------------------------------------
-bool unicomm::client::is_connect_error(void) const
-{
-  return !_conn_errors.empty();
-}
-
 //////////////////////////////////////////////////////////////////////////
 // core - processors
 void unicomm::client::extra_process(void)
@@ -137,36 +131,22 @@ void unicomm::client::extra_process(void)
 //-----------------------------------------------------------------------------
 void unicomm::client::process_connect_error(void)
 {
-  if (is_connect_error())
-  {
-    while (!_conn_errors.empty())
-    {
-      const connect_error_collection_type::value_type err_info = 
-        _conn_errors.front();
-      _conn_errors.erase(_conn_errors.begin());
+  mutex_type::scoped_lock lock(_conn_errors_mutex);
 
-      call_conn_error(err_info);
-    }
+  while (is_connect_error())
+  {
+    const connect_error_collection_type::value_type err_info = 
+      _conn_errors.front();
+    _conn_errors.erase(_conn_errors.begin());
+
+    call_conn_error(err_info);
   }
 }
-
-////-----------------------------------------------------------------------------
-//void unicomm::client::before_start(void)
-//{
-//  _conn_errors.clear();
-//
-//#ifdef UNICOMM_SSL
-//
-//  ssl_context().set_verify_mode(boost::asio::ssl::context::verify_peer);
-//  ssl_context().load_verify_file(config().home_dir() + config().ssl_client_verify_fn());
-//
-//#endif // UNICOMM_SSL
-//}
 
 //-----------------------------------------------------------------------------
 void unicomm::client::on_reset(void)
 {
-  _conn_errors.clear();
+  clear_conn_errors();
 
 #ifdef UNICOMM_SSL
 
@@ -179,7 +159,7 @@ void unicomm::client::on_reset(void)
 //-----------------------------------------------------------------------------
 void unicomm::client::initialize(void)
 {
-  _conn_errors.clear();
+  clear_conn_errors();
 
 #ifdef UNICOMM_SSL
 
@@ -227,7 +207,15 @@ void unicomm::client::call_after_connect(tcp_socket_type& socket)
 // connection error handling: routines
 void unicomm::client::reg_conn_error(const connect_error_info& info)
 {
+  mutex_type::scoped_lock lock(_conn_errors_mutex);
   _conn_errors.push_back(info);
+}
+
+//------------------------------------------------------------------------
+void unicomm::client::clear_conn_errors(void)
+{
+  mutex_type::scoped_lock lock(_conn_errors_mutex);
+  _conn_errors.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -279,42 +267,6 @@ void unicomm::client::asio_connect_handler(const comm_ptr& client,
 }
 
 #ifdef UNICOMM_SSL
-
-//void unicomm::client::asio_connect_handler(const comm_ptr& client, connect_error_info& info, const boost::system::error_code& error)
-//{
-//  UNICOMM_DEBUG_OUT("[unicomm::client]: Asio connect handler invoked; comm ID = " << std::dec << client->id())
-//
-//  if (error)
-//  {
-//    UNICOMM_DEBUG_OUT("[unicomm::client]: Connection failed; comm ID = " << std::dec << client->id() << "; [" << error << "; " << error.message() << "]")
-//
-//    info.error_code(error);
-//
-//    reg_conn_error(info);
-//  } else
-//  {
-//
-//#ifdef UNICOMM_SSL
-//
-//    client->asio_success_connect_handler(bind(
-//      &client::asio_handshake_handler, this, client, info, boost::asio::placeholders::error)); // -> client->ssl_socket().async_handshake(...)
-//
-//#else // UNICOMM_SSL
-//
-//    insert_comm(client);
-//    // make client know that it is just connected
-//    client->asio_success_connect_handler(); // -> client->just_connected(true);
-//
-//#endif // UNICOMM_SSL
-//
-//    // call virtual
-//    call_after_connect(client->socket());
-//  }
-//
-//  UNICOMM_DEBUG_OUT("[unicomm::client]: Asio connect finished; comm ID = " << std::dec << client->id())
-//}
-//
-//#ifdef UNICOMM_SSL
 
 //-----------------------------------------------------------------------------
 void unicomm::client::asio_handshake_handler(const comm_ptr& client, 

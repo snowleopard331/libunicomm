@@ -221,8 +221,8 @@ private:
   // after processed handler
   void after_processed_handler(const unicomm::after_processed_params& params)
   {
-    // called approximately within config().sleep_working_thread_tout() ms
-    // zero means infinite timeout, if timeout is infinte only called
+    // called approximately within config().dispatcher_idle_tout() ms
+    // zero means infinite timeout, if timeout is infinite only called
     // if there is data to be processed
     // default timeout is 50 ms.
     side_after_processed_handler<SessionParamsT>(params);
