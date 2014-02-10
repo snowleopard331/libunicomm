@@ -295,14 +295,12 @@ unicomm::comm_container::communicators(void) const
 unicomm::comm_container::commid_collection_type 
 unicomm::comm_container::connections(void) const 
 { 
-  boost::recursive_mutex::scoped_lock lock(_clients_mutex);
-
   commid_collection_type commids;
   commids.reserve(0x80);
 
   //struct id_collector {}; // gcc doesn't eat
 
-  //boost::recursive_mutex::scoped_lock lock(_clients_mutex);
+  boost::recursive_mutex::scoped_lock lock(_clients_mutex);
 
   std::for_each(clients().begin(), clients().end(), id_collector(commids));
   std::for_each(excluded_clients().begin(), excluded_clients().end(), 
