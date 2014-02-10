@@ -1,3 +1,8 @@
+Version 2.17i Beta
+  - Dispatcher connections() method implemented;
+  - Client crush on connection failure within multiple threads fixed;
+  - .ipp files are not copied to the prefix location fixed.
+
 Version 2.17h Beta
   - Minor improvements performed.
 

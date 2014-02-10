@@ -302,6 +302,8 @@ unicomm::comm_container::connections(void) const
 
   //struct id_collector {}; // gcc doesn't eat
 
+  //boost::recursive_mutex::scoped_lock lock(_clients_mutex);
+
   std::for_each(clients().begin(), clients().end(), id_collector(commids));
   std::for_each(excluded_clients().begin(), excluded_clients().end(), 
     id_collector(commids));

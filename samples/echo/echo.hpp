@@ -28,6 +28,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <iterator>
 
 #include <cstddef>
 
@@ -203,7 +204,7 @@ private:
 
     ss << name() << "> [" << params.comm().id() << "]:\tCONNECTED; local endpoint: "
       << params.comm().local_endpoint() << ", remote endpoint: "
-      << params.comm().remote_endpoint();
+      << params.comm().remote_endpoint() << "; " << connected_clients_str(params.comm().owner());
     out_str(ss.str());
 
     // split the behavior in compile time
@@ -238,7 +239,8 @@ private:
     std::stringstream ss;
 
     ss << name() << "> [" << params.comm().id() << "]:\tDISCONNECTED; "
-      << params.error_code() << "; " << params.what();
+      << params.error_code() << "; " << params.what() << "; " 
+      << connected_clients_str(params.comm().owner());
     out_str(ss.str());
   }
 
@@ -299,6 +301,21 @@ private:
       this, boost::ref(comm), _1));
   }
 
+  //----------------------------------------------------------------------
+  std::string connected_clients_str(const unicomm::dispatcher& d)
+  {
+    const unicomm::dispatcher::commid_collection_type ids = d.connections();
+
+    std::stringstream ss;
+    ss << "Now connected " << ids.size() << " are [";
+    std::copy(ids.begin(), ids.end(), 
+      std::ostream_iterator<unicomm::commid_type>(ss, " "));
+    ss << "]";
+
+    return ss.str();
+  }
+
+  //----------------------------------------------------------------------
   bool is_time(void) const { return _timeout-- == 0; }
   void reset_timeout(void) { _timeout = timeout; }
   mutable volatile size_t _timeout;
