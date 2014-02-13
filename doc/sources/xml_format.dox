@@ -19,7 +19,7 @@ It's possible to declare one-dimensional array of each type including <em><compl
 The array is declared using <em><items></em> tag, it can only appear inside type tags. 
 For instance, following will create strings array with four elements.
 
-@verbatim
+<pre class="prettyprint">
 <string name="strings array">
   <items>
     <item>string1</item>
@@ -28,7 +28,7 @@ For instance, following will create strings array with four elements.
     <item>string4</item>
   </items>
 </string> 
-@endverbatim
+</pre>
 
 If you want to use array of <em><complex></em> objects use <em><complex></em> tag inside <em>item</em> tag.
 

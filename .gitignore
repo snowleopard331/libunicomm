@@ -25,4 +25,4 @@ ipch/
 temp/
 doc/manuals*/*
 /third_party/libsmart-*/out/stuff/
-
+publish-tar-gz.bash

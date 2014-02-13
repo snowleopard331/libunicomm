@@ -16,7 +16,7 @@
 
 @section dir_content_section Package content
 
-<pre style="border: 1px dashed #C4CFE5; padding: 0.5pc 0.5pc 0.5pc 0.5pc; margin-left: 2em; margin-right: 2em;">
+<pre class="fragment">
     <strong>unicomm/</strong>..........................<em>Package root directory</em>
         <strong>build/</strong>...............<em>Unicomm build auxiliary scripts</em>
         <strong>doc/</strong>.........................................<em>Manuals</em>
@@ -106,7 +106,7 @@ For OpenSSL and Xerces-C it's supposed libraries located in
 
 Those values assigned to the variables if they undefined.
 
-<pre style="border: 1px dashed #C4CFE5; padding: 0.5pc 0.5pc 0.5pc 0.5pc; margin-left: 2em; margin-right: 2em;">
+<pre class="fragment">
 <strong></strong>                     Linux                          Windows
 <strong>BOOST_INCLUDE_PATH = </strong><em>/usr/local/include/boost-1_53  c:\\boost\\include\\boost-1_53</em>
 <strong>BOOST_LIBRARY_PATH = </strong><em>/usr/local/lib                 c:\\boost\\lib</em>

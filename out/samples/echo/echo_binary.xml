@@ -16,12 +16,12 @@
 
   <!-- required -->
   <complex name="common">
-	  <!-- required, tcp port to be listened to by the unicomm engine -->
-    <!-- in case of zero Unix selects the value by it's decision and Windows -->
+    <!-- required, tcp port to be listened to by the unicomm engine -->
+    <!-- in case of zero Unix selects the value by it is decision and Windows -->
     <!-- I suppose returns the error -->
     <uint name="tcp_port">55555</uint>
 
-	  <!-- optional, default = 0; tcp backlog to be used for incoming connections queue -->
+    <!-- optional, default = 0; tcp backlog to be used for incoming connections queue -->
     <!-- 0 manages that system default value is used -->
     <!-- <uint name="tcp_port">5</uint> -->
 	
@@ -93,15 +93,15 @@
 			two characters with codes 255 and 13 respectively.
 			
 			If out of range value specified the std::out_of_range exception is thrown.
-      std::runtime_error is thrown if the given string format is wrong.
+            std::runtime_error is thrown if the given string format is wrong.
 		  -->
           <string name="message_name">\x0</string>
 		  
 		  <!-- optional, default = default_priority (see above) -->
-      <!-- <uint name="priority">0</uint> -->
+          <!-- <uint name="priority">0</uint> -->
 		  
-  		<!-- optional, default = 0 -->
-		  <!-- note: it's possible to define reply to reply -->
+          <!-- optional, default = 0 -->
+		  <!-- note: it is possible to define reply to reply -->
 		  <!-- messages can be organized into a arbitrary long chain.  -->
 		  <!-- this only depends on logic you need to implement.  -->
 		  <!-- just correcly define those rules and unicomm will care about it.  -->
