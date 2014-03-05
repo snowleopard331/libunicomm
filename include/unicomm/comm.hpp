@@ -48,6 +48,7 @@
 #include <boost/system/error_code.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/atomic.hpp>
+#include <boost/noncopyable.hpp>
 
 #ifdef UNI_VISUAL_CPP
 # pragma warning (push)
@@ -112,7 +113,8 @@ class dispatcher;
  *  const interface is used.
  */
 class UNICOMM_DECL communicator : 
-  public boost::enable_shared_from_this<communicator>
+  public boost::enable_shared_from_this<communicator>, 
+  private boost::noncopyable
 {
 //////////////////////////////////////////////////////////////////////////
 // interface
@@ -691,11 +693,6 @@ private:
   void call_connected(void) const;
   message_arrived_params call_message_arrived(const message_base& m, 
     messageid_type out_mes_id) const;
-
-private:
-  // deny copying
-  communicator(const communicator&);
-  communicator& operator=(const communicator&);
 
 private:
   //////////////////////////////////////////////////////////////////////////

@@ -99,8 +99,7 @@ namespace
 unicomm::dispatcher::dispatcher(const unicomm::config& config):
   _endpoint(config.endpoint()),
   _config(config),
-  //_wait_on_stop(default_wait_on_stop()),
-  _new_commid(0),
+  _new_commid(initial_commid()),
   _is_working(true),
   _run_count(0),
   _kick_count(0)
@@ -113,8 +112,7 @@ unicomm::dispatcher::dispatcher(const unicomm::config& config,
                                 const tcp::endpoint &endpoint):
   _endpoint(endpoint),
   _config(config),
-  //_wait_on_stop(default_wait_on_stop()),
-  _new_commid(0),
+  _new_commid(initial_commid()),
   _is_working(true),
   _run_count(0),
   _kick_count(0)
@@ -218,7 +216,8 @@ unicomm::dispatcher::local_endpoint(commid_type commid) const
 //-----------------------------------------------------------------------------
 unicomm::commid_type unicomm::dispatcher::new_commid(void)
 {
-  return _new_commid++;
+  return _new_commid < initial_commid()?
+    _new_commid = initial_commid(): _new_commid++;
 }
 
 //-----------------------------------------------------------------------------

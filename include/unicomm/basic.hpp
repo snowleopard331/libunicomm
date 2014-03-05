@@ -70,6 +70,12 @@ UNICOMM_DECL size_t max_priority(void);
 UNICOMM_DECL size_t undefined_priority(void);
 //@}
 
+/** Communicator identifier initial value. */
+inline commid_type initial_commid(void) { return 100; }
+
+/** Whether communicator identifier is valid. */
+inline bool is_valid_commid(commid_type id) { return id >= initial_commid(); }
+
 /** Infinite timeout value. 
  *
  *  The value means if reply to a message is needed it will be waited for infinitely.
