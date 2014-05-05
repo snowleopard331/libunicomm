@@ -582,7 +582,13 @@ private:
   bool is_timeout_registered(messageid_type id) const;
   void unreg_message_timeout(messageid_type id);
   void unreg_message_timeout(messages_timeouts_map_type::iterator it);
-  const message_timeout_info& get_message_timeout(messageid_type mid) const;
+  const message_timeout_info get_message_timeout(messageid_type mid) const;
+
+  void mt_reg_message_timeout(messageid_type mid, const std::string& name) const;
+  bool mt_is_timeout_registered(messageid_type id) const;
+  void mt_unreg_message_timeout(messageid_type id);
+  void mt_unreg_message_timeout(messages_timeouts_map_type::iterator it);
+  const message_timeout_info mt_get_message_timeout(messageid_type mid) const;
 
   //////////////////////////////////////////////////////////////////////////
   // sent messages
@@ -697,7 +703,6 @@ private:
 private:
   //////////////////////////////////////////////////////////////////////////
   // data
-  this_mutex_type _this_mutex;
   mutable out_buffer_mutex_type _out_buf_mutex;
   mutex_type _read_err_mutex;
   mutex_type _write_err_mutex;
@@ -706,6 +711,7 @@ private:
   // due to external access is possible
   mutable mutex_type _session_mutex;
   mutable mutex_type _sent_mes_mutex;
+  mutable mutex_type _tout_mutex;
 
   socket_type _socket;
   commid_type _id;
@@ -729,14 +735,11 @@ private:
 
 #endif // UNICOMM_SSL
 
-  //volatile bool _connected; 
   boost::atomic<bool> _connected; 
-  //volatile bool _just_connected;
   boost::atomic<bool> _just_connected;
   session_base::pointer_type _user_session;
   const unicomm::config* _config;
   dispatcher& _owner;
-  //volatile bool _in_buffer_updated;
   boost::atomic<bool> _in_buffer_updated;
 
 #ifdef UNICOMM_FORK_SUPPORT

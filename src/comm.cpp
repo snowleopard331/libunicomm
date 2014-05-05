@@ -243,31 +243,6 @@ void unicomm::communicator::close_socket(void)
 }
 
 //-----------------------------------------------------------------------------
-void unicomm::communicator::reg_message_timeout(messageid_type mid, 
-                                                const string& name) const
-{
-  // register outgoing message
-  const unicomm::config& conf = config();
-
-  const smart::timeout tout(conf.message_timeout_used(name)? 
-    milliseconds(conf.message_timeout(name)): smart::timeout::infinite_timeout());
-
-  UNICOMM_DEBUG_OUT("[unicomm::communicator]: REGISTER MESSAGE TIMEOUT; comm ID = " 
-    << dec << id() << "; message ID = " << mid << "; timeout = " 
-    << conf.message_timeout(name) << " ms; message NAME = " << name)
-
-  if (is_timeout_registered(mid))
-  {
-    // overwrite existing timeout if same message identifier got
-    _mes_timeouts[mid] = message_timeout_info(name, tout);
-  } else
-  {
-    // create new one if doesn't exist
-    _mes_timeouts.insert(make_pair(mid, message_timeout_info(name, tout)));
-  }
-}
-
-//-----------------------------------------------------------------------------
 unicomm::messageid_type unicomm::communicator::new_mid(void) const
 {
   if (++_mesid == undefined_messageid())
@@ -276,12 +251,6 @@ unicomm::messageid_type unicomm::communicator::new_mid(void) const
   }
 
   return _mesid;
-}
-
-//-----------------------------------------------------------------------------
-bool unicomm::communicator::is_timeout_registered(messageid_type id) const
-{
-  return _mes_timeouts.find(id) != _mes_timeouts.end();
 }
 
 /** Creates session object using specified by constructor factory method. */
@@ -714,6 +683,39 @@ void unicomm::communicator::fork_child(void) const
 
 #endif // UNICOMM_FORK_SUPPORT
 
+//////////////////////////////////////////////////////////////////////////
+// timeouts support
+
+void unicomm::communicator::reg_message_timeout(messageid_type mid, 
+                                                const string& name) const
+{
+  // register outgoing message
+  const unicomm::config& conf = config();
+
+  const smart::timeout tout(conf.message_timeout_used(name)? 
+    milliseconds(conf.message_timeout(name)): smart::timeout::infinite_timeout());
+
+  UNICOMM_DEBUG_OUT("[unicomm::communicator]: REGISTER MESSAGE TIMEOUT; comm ID = " 
+    << dec << id() << "; message ID = " << mid << "; timeout = " 
+    << conf.message_timeout(name) << " ms; message NAME = " << name)
+
+    if (is_timeout_registered(mid))
+    {
+      // overwrite existing timeout if same message identifier got
+      _mes_timeouts[mid] = message_timeout_info(name, tout);
+    } else
+    {
+      // create new one if doesn't exist
+      _mes_timeouts.insert(make_pair(mid, message_timeout_info(name, tout)));
+    }
+}
+
+//-----------------------------------------------------------------------------
+bool unicomm::communicator::is_timeout_registered(messageid_type id) const
+{
+  return _mes_timeouts.find(id) != _mes_timeouts.end();
+}
+
 //-----------------------------------------------------------------------------
 void unicomm::communicator::unreg_message_timeout(messageid_type id)
 {
@@ -738,7 +740,7 @@ void unicomm::communicator::unreg_message_timeout(
 }
 
 //-----------------------------------------------------------------------------
-const unicomm::communicator::message_timeout_info& 
+const unicomm::communicator::message_timeout_info 
 unicomm::communicator::get_message_timeout(messageid_type mid) const
 {
   messages_timeouts_map_type::const_iterator cit = _mes_timeouts.find(mid);
@@ -751,8 +753,52 @@ unicomm::communicator::get_message_timeout(messageid_type mid) const
   return cit->second;
 }
 
+//------------------------------------------------------------------------
+void unicomm::communicator::mt_reg_message_timeout(messageid_type mid, 
+                                                   const std::string& name) const
+{
+  mutex_type::scoped_lock lock(_tout_mutex);
+
+  reg_message_timeout(mid, name);
+}
+
+//------------------------------------------------------------------------
+bool unicomm::communicator::mt_is_timeout_registered(messageid_type id) const
+{
+  mutex_type::scoped_lock lock(_tout_mutex);
+
+  return is_timeout_registered(id);
+}
+
+//------------------------------------------------------------------------
+void unicomm::communicator::mt_unreg_message_timeout(messageid_type id)
+{
+  mutex_type::scoped_lock lock(_tout_mutex);
+
+  unreg_message_timeout(id);
+}
+
+//------------------------------------------------------------------------
+void unicomm::communicator::mt_unreg_message_timeout(
+  messages_timeouts_map_type::iterator it)
+{
+  mutex_type::scoped_lock lock(_tout_mutex);
+  
+  unreg_message_timeout(it);
+}
+
+//------------------------------------------------------------------------
+const unicomm::communicator::message_timeout_info 
+unicomm::communicator::mt_get_message_timeout(messageid_type mid) const
+{
+  mutex_type::scoped_lock lock(_tout_mutex);
+
+  return get_message_timeout(mid);
+}
+
 //////////////////////////////////////////////////////////////////////////
 // sent messages
+
 void unicomm::communicator::reg_sent_message(messageid_type int_mid)
 {
   try
@@ -867,7 +913,7 @@ void unicomm::communicator::process_timeouts(void)
         << dec << id() << "; message ID = " << mid << "; message NAME = " 
         << it->second.name())
 
-      unreg_message_timeout(it++);
+      mt_unreg_message_timeout(it++);//unreg_message_timeout(it++);
 
       // call timeout handler
       call_message_timeout(mid);
@@ -892,37 +938,6 @@ void unicomm::communicator::mt_process_errors(void)
   mt_handle_ch_error();
 }
 
-////-----------------------------------------------------------------------------
-//void unicomm::communicator::process_sent(void)
-//{
-//  BOOST_ASSERT(!is_sent_messages_empty() && 
-//    " - Sent messages collection could not be empty");
-//
-//  for (sent_messages_vector_type::iterator it = _sent_messages.begin();
-//    it != _sent_messages.end(); /*++it*/)
-//  {
-//    const messageid_type mid = it->id();
-//    const string& name       = it->name();
-//
-//    // register outgoing messages id and its timeout
-//    const unicomm::config& conf = config();
-//    if (conf.timeouts_enabled() && conf.need_reply(name))
-//    {
-//      reg_message_timeout(mid, name);
-//    }
-//
-//    UNICOMM_DEBUG_OUT("[unicomm::communicator]: MESSAGE IS SENT; comm ID = " 
-//      << dec << id() << "; internal ID = " << it->int_id()
-//      << "; message ID = " << mid << "; message NAME = " << name)
-//
-//    // remove entry
-//    it = unreg_sent_message(it);
-//
-//    // notify upper level
-//    call_message_sent(mid);
-//  }
-//}
-
 //-----------------------------------------------------------------------------
 void unicomm::communicator::mt_process_sent(void)
 {
@@ -942,7 +957,7 @@ void unicomm::communicator::mt_process_sent(void)
     const unicomm::config& conf = config();
     if (conf.timeouts_enabled() && conf.need_reply(name))
     {
-      reg_message_timeout(mid, name);
+      mt_reg_message_timeout(mid, name);//reg_message_timeout(mid, name);
     }
 
     UNICOMM_DEBUG_OUT("[unicomm::communicator]: MESSAGE IS SENT; comm ID = " 
@@ -1024,7 +1039,7 @@ void unicomm::communicator::process_reply(const message_base& m)
 {
   const messageid_type rep_mid = get_rid(m);
 
-  if (is_timeout_registered(rep_mid))
+  if (mt_is_timeout_registered(rep_mid)/*is_timeout_registered(rep_mid)*/)
   {
     UNICOMM_DEBUG_OUT(
       "[unicomm::communicator]: REGISTERED REPLY MESSAGE RECEIVED; comm ID = "
@@ -1033,7 +1048,7 @@ void unicomm::communicator::process_reply(const message_base& m)
 
     const string& rep_name      = get_name(m);
     const unicomm::config& conf = config();
-    const string& req_name      = get_message_timeout(rep_mid).name();
+    const string req_name       = mt_get_message_timeout(rep_mid).name();//get_message_timeout(rep_mid).name();
 
     if (!is_allowed_reply(conf, req_name, rep_name))
     {
@@ -1050,7 +1065,7 @@ void unicomm::communicator::process_reply(const message_base& m)
       throw disallowed_reply_error(ss.str());
     }
 
-    unreg_message_timeout(rep_mid);
+    mt_unreg_message_timeout(rep_mid);//unreg_message_timeout(rep_mid);
 
     // call users handler
 #ifdef UNICOMM_DEBUG
@@ -1095,54 +1110,43 @@ void unicomm::communicator::mt_process(void)
   //UNICOMM_DEBUG_OUT("[unicomm::communicator]: Process ENTER; comm ID = "
   //  << dec << id() << _::session_name(*this))
 
-  this_mutex_type::scoped_try_lock lock(_this_mutex);
-
-  // process if locked
-  if (lock.owns_lock())
+  // process connected
+  if (just_connected())
   {
-    //UNICOMM_DEBUG_OUT("[unicomm::communicator]: Process OBJECT LOCKED; comm ID = "
-    //  << dec << id() << _::session_name(*this))
-    // process connected
-    if (just_connected())
-    {
-      just_connected(false);
-      process_connect();
-    }
-
-    // the order of sent processing matters
-    // request data from one of previous iterations is sent
-    if (mt_is_write_completed_successfully())
-    {
-      mt_process_sent();
-    }
-
-    // try to process arrived data if there is something to process
-    if (mt_is_arrived())
-    {
-      mt_process_arrived();
-    }
-
-    // try to start writing if necessary - if there is something to write
-    if (is_ready_to_write())
-    {
-      mt_start_write();
-    }
-
-    // consider timeouts
-    if (config().timeouts_enabled())
-    {
-      process_timeouts();
-    }
-
-    // process errors
-    mt_process_errors();
-
-    // call after processed handler
-    call_after_processed();
-
-    //UNICOMM_DEBUG_OUT("[unicomm::communicator]: Process ABOUT TO UNLOCK OBJECT; comm ID = "
-    //  << dec << id() << _::session_name(*this))
+    just_connected(false);
+    process_connect();
   }
+
+  // the order of sent processing matters
+  // request data from one of previous iterations is sent
+  if (mt_is_write_completed_successfully())
+  {
+    mt_process_sent();
+  }
+
+  // try to process arrived data if there is something to process
+  if (mt_is_arrived())
+  {
+    mt_process_arrived();
+  }
+
+  // try to start writing if necessary - if there is something to write
+  if (is_ready_to_write())
+  {
+    mt_start_write();
+  }
+
+  // consider timeouts
+  if (config().timeouts_enabled())
+  {
+    process_timeouts();
+  }
+
+  // process errors
+  mt_process_errors();
+
+  // call after processed handler
+  call_after_processed();
 
   //UNICOMM_DEBUG_OUT("[unicomm::communicator]: Process EXIT; comm ID = "
   //  << dec << id() << _::session_name(*this))
@@ -1193,6 +1197,7 @@ unicomm::communicator::prepare_to_write(const message_base &message)
 
   // set message id
   messageid_type mid = get_id(m);//undefined_messageid();
+  const string& name = get_name(m);
 
   const unicomm::config& conf = config();
   // adjust message id and priority only if timeouts enabled
@@ -1206,16 +1211,19 @@ unicomm::communicator::prepare_to_write(const message_base &message)
   if (conf.use_default_message_priority() && 
     is_undefined_priority(get_priority(m)))
   {
-    set_priority(m, conf.message_priority(get_name(m)));
+    set_priority(m, conf.message_priority(name));
   }
 
-  //const out_buffer_type& out_buffer = 
-  //  conf.message_encoder().perform_encode(m, session());
   const out_buffer_type out_buffer = 
     conf.message_encoder().perform_encode(m, session());
 
   push_prepeared_message(
     prepeared_message(mid, get_name(m), get_priority(m), out_buffer));
+
+  if (conf.timeouts_enabled() && conf.need_reply(name))
+  {
+    mt_reg_message_timeout(mid, name);//reg_message_timeout(mid, name);
+  }
 
   UNICOMM_DEBUG_OUT(
     "[unicomm::communicator]: MESSAGE IS PUSHED TO QUEUE; comm ID = " 
